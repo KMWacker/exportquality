@@ -70,22 +70,22 @@ sort year new_geo_code nace2_name, stable
 
 merge year new_geo_code nace2_name using "temp_klems.dta"
 drop if _merge==1 	/* everything from using data merged */
+rm "temp_klems.dta"
 
+* SET PANEL
 gen panel_descr = new_geo_code + "_" + nace2_name
 encode panel_descr, gen(panel_id)
 drop panel_descr
 
 xtset panel_id year
-rm "temp_klems.dta"
 
-* GENERATE CHANGES and regression panel
+* GENERATE CHANGES and averages
 gen d_lnVApc = (ln(VA_CP/EMPE) - ln(L4.VA_CP/L4.EMPE))/4 if year==2019
 
 bys panel_id: egen avgDEXQC = mean(dexqc)
 bys panel_id: egen avgXQ = mean(xq)
 
 * REGRESSIONS
-
 areg d_lnVA avg* if sector_key==1, absorb(new_geo) rob
 estimates store va_model, title(Model 1)
 
@@ -93,5 +93,4 @@ tab new_geo if e(sample)
 tab nace2_name if e(sample)
 
 * OUTPUT
-
 estout va_model, cells(b(star fmt(3)) se(par fmt(2))) stats(r2 N) legend starlevels(* 0.1 ** 0.05 *** 0.01)
